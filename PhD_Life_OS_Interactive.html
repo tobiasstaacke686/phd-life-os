@@ -1,0 +1,1927 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PhD Life OS</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a0f0a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="PhD Life OS">
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0f0a;
+    --surface: #111811;
+    --surface2: #162016;
+    --border: #1e2e1e;
+    --accent: #2dff6e;
+    --accent-dim: #1a9940;
+    --text: #e8f0e8;
+    --text-muted: #6b8c6b;
+    --text-dim: #3d5c3d;
+    --red: #ff5c5c;
+    --yellow: #ffd166;
+    --blue: #4db8ff;
+    --purple: #c47aff;
+    --orange: #ff8c42;
+    --teal: #2de8d8;
+    --pink: #ff6eb4;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  .header {
+    background: linear-gradient(135deg, #0a1a0a 0%, #0d1f0d 50%, #0a150a 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 28px 40px 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(45,255,110,0.07) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .header::after {
+    content: '';
+    position: absolute;
+    top: -40px; right: 200px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(77,184,255,0.05) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+  }
+  .logo-area .tagline {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 3px;
+    margin-bottom: 6px;
+    opacity: 0.8;
+  }
+  .logo-area h1 {
+    font-size: 32px;
+    font-weight: 300;
+    letter-spacing: -1px;
+  }
+  .logo-area h1 span { color: var(--accent); font-weight: 700; }
+  .clock-area { text-align: right; }
+  .clock-day {
+    font-family: 'Space Mono', monospace;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -1px;
+  }
+  .clock-date {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 2px 0;
+  }
+  .clock-time {
+    font-family: 'Space Mono', monospace;
+    font-size: 20px;
+    color: var(--accent);
+  }
+
+  /* NAV */
+  .nav {
+    display: flex;
+    gap: 0;
+    border-top: 1px solid var(--border);
+    margin: 0 -40px;
+    padding: 0 40px;
+  }
+  .nav-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 12px 18px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  .nav-btn:hover { color: var(--text); }
+  .nav-btn.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+  .nav-btn[onclick*="tasks"].active { color: var(--teal); border-bottom-color: var(--teal); }
+  .nav-btn[onclick*="projekte"].active { color: var(--blue); border-bottom-color: var(--blue); }
+  .nav-btn[onclick*="literatur"].active { color: var(--purple); border-bottom-color: var(--purple); }
+  .nav-btn[onclick*="publikationen"].active { color: var(--orange); border-bottom-color: var(--orange); }
+  .nav-btn[onclick*="ziele"].active { color: var(--yellow); border-bottom-color: var(--yellow); }
+  .nav-btn[onclick*="wheel"].active { color: var(--pink); border-bottom-color: var(--pink); }
+
+  /* MAIN */
+  .main { padding: 32px 40px; max-width: 1400px; }
+
+  /* TABS */
+  .tab { display: none; }
+  .tab.active { display: block; }
+
+  /* SECTION TITLE */
+  .section-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  /* GRID */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+
+  /* CARD */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    position: relative;
+  }
+  .card.blue-accent { border-top: 2px solid var(--blue); }
+  .card.purple-accent { border-top: 2px solid var(--purple); }
+  .card.orange-accent { border-top: 2px solid var(--orange); }
+  .card.yellow-accent { border-top: 2px solid var(--yellow); }
+  .card.pink-accent { border-top: 2px solid var(--pink); }
+  .card.teal-accent { border-top: 2px solid var(--teal); }
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  .card-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .card-title .dot.yellow { background: var(--yellow); }
+  .card-title .dot.blue { background: var(--blue); }
+  .card-title .dot.purple { background: var(--purple); }
+  .card-title .dot.orange { background: var(--orange); }
+  .card-title .dot.teal { background: var(--teal); }
+  .card-title .dot.pink { background: var(--pink); }
+
+  /* ADD BUTTON */
+  .btn-add {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--accent);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .btn-add:hover {
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
+  }
+
+  /* PROJECT ITEM */
+  .project-item {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .project-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .project-item:first-child { padding-top: 0; }
+  .project-item:hover { transform: translateX(3px); }
+  .project-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .project-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .project-pct {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .project-pct.low { color: var(--red); }
+  .project-pct.mid { color: var(--yellow); }
+  .progress-bar {
+    width: 100%;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 6px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+    border-radius: 2px;
+    transition: width 0.5s ease;
+  }
+  .progress-fill.blue { background: linear-gradient(90deg, #1e4a8a, var(--blue)); }
+  .progress-fill.purple { background: linear-gradient(90deg, #5a1e99, var(--purple)); }
+  .progress-fill.orange { background: linear-gradient(90deg, #8a3010, var(--orange)); }
+  .progress-fill.yellow { background: linear-gradient(90deg, #885500, var(--yellow)); }
+  .project-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .project-actions {
+    display: none;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .project-item:hover .project-actions { display: flex; }
+  .btn-sm {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-muted);
+    font-size: 11px;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .btn-sm:hover { color: var(--text); border-color: var(--text-muted); }
+  .btn-sm.danger:hover { color: var(--red); border-color: var(--red); }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    width: 480px;
+    max-width: 95vw;
+    animation: modalIn 0.2s ease;
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.95) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .modal h2 {
+    font-family: 'Space Mono', monospace;
+    font-size: 14px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 24px;
+  }
+  .form-group { margin-bottom: 16px; }
+  .form-group label {
+    display: block;
+    font-size: 11px;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus { border-color: var(--accent); }
+  .form-group select option { background: var(--surface); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .range-wrap { display: flex; align-items: center; gap: 12px; }
+  .range-wrap input[type=range] {
+    flex: 1;
+    accent-color: var(--accent);
+    padding: 0;
+    height: 4px;
+  }
+  .range-val {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    min-width: 40px;
+    text-align: right;
+  }
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 24px;
+  }
+  .btn-cancel {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-cancel:hover { border-color: var(--text-muted); color: var(--text); }
+  .btn-save {
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    color: var(--bg);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 24px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-save:hover { background: #8ed89a; }
+
+  /* TODAY */
+  .today-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+  .task-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .task-item:last-child { border-bottom: none; }
+  .task-check {
+    width: 16px; height: 16px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .task-check.done { background: var(--accent); border-color: var(--accent); }
+  .task-check.done::after { content: '✓'; font-size: 10px; color: var(--bg); font-weight: 700; }
+  .task-text { font-size: 14px; flex: 1; }
+  .task-text.done { text-decoration: line-through; color: var(--text-muted); }
+  .task-tag {
+    font-size: 10px;
+    font-family: 'Space Mono', monospace;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--surface2);
+    color: var(--text-muted);
+  }
+
+  /* STATS */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    border-left: 3px solid var(--accent);
+  }
+  .stat-card:nth-child(2) { border-left-color: var(--blue); }
+  .stat-card:nth-child(3) { border-left-color: var(--purple); }
+  .stat-card:nth-child(4) { border-left-color: var(--yellow); }
+  .stat-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .stat-value {
+    font-family: 'Space Mono', monospace;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .stat-card:nth-child(2) .stat-value { color: var(--blue); }
+  .stat-card:nth-child(3) .stat-value { color: var(--purple); }
+  .stat-card:nth-child(4) .stat-value { color: var(--yellow); }
+  .stat-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+  /* CALENDAR */
+  .cal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .cal-month {
+    font-family: 'Space Mono', monospace;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: 1px;
+  }
+  .cal-nav {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-muted);
+    font-size: 14px;
+    width: 30px; height: 30px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .cal-nav:hover { color: var(--accent); border-color: var(--accent); }
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    margin-bottom: 16px;
+  }
+  .cal-dow {
+    text-align: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    padding: 4px 0 8px;
+    text-transform: uppercase;
+  }
+  .cal-day {
+    aspect-ratio: 1;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 6px 4px 4px;
+    position: relative;
+    min-height: 52px;
+  }
+  .cal-day:hover { border-color: var(--border); background: var(--surface2); }
+  .cal-day.today {
+    border-color: var(--accent);
+    background: rgba(45,255,110,0.06);
+  }
+  .cal-day.selected {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .cal-day.selected .cal-day-num { color: var(--bg); font-weight: 700; }
+  .cal-day.other-month { opacity: 0.25; }
+  .cal-day-num {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .cal-day.today .cal-day-num { color: var(--accent); font-weight: 700; }
+  .cal-dots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    justify-content: center;
+  }
+  .cal-dot {
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+  .cal-dot.blue { background: var(--blue); }
+  .cal-dot.purple { background: var(--purple); }
+  .cal-dot.orange { background: var(--orange); }
+  .cal-dot.yellow { background: var(--yellow); }
+  .cal-dot.done { background: var(--text-dim); }
+  .cal-day.selected .cal-dot { background: var(--bg); }
+
+  /* DAY PANEL */
+  .day-panel-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .cal-task-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--border);
+    animation: fadeIn 0.15s ease;
+  }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
+  .cal-task-item:last-of-type { border-bottom: none; }
+  .cal-task-check {
+    width: 18px; height: 18px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .cal-task-check:hover { border-color: var(--accent); }
+  .cal-task-check.done { background: var(--accent); border-color: var(--accent); }
+  .cal-task-check.done::after { content:'✓'; font-size:11px; color:var(--bg); font-weight:700; }
+  .cal-task-text { flex: 1; font-size: 13px; }
+  .cal-task-text.done { text-decoration: line-through; color: var(--text-muted); }
+  .cal-task-tag {
+    font-size: 10px;
+    font-family: 'Space Mono', monospace;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: var(--surface2);
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+  .cal-add-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  .cal-add-input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 8px 12px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .cal-add-input:focus { border-color: var(--accent); }
+  .cal-add-btn {
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    color: var(--bg);
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .cal-add-btn:hover { background: #50ff88; }
+  .cal-tag-select {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-muted);
+    font-size: 12px;
+    padding: 8px 10px;
+    outline: none;
+    cursor: pointer;
+  }
+  .cal-tag-select:focus { border-color: var(--accent); }
+  .cal-empty {
+    text-align: center;
+    padding: 20px 0;
+    color: var(--text-dim);
+    font-size: 13px;
+  }
+
+  /* WHEEL */
+  .wheel-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .wheel-item {}
+  .wheel-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    margin-bottom: 4px;
+    color: var(--text-muted);
+  }
+  .wheel-score {
+    font-family: 'Space Mono', monospace;
+    color: var(--accent);
+    font-size: 12px;
+  }
+  .wheel-bar {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .wheel-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+    transition: width 0.5s ease;
+  }
+  .wheel-item:nth-child(2) .wheel-fill { background: linear-gradient(90deg, #1e4a8a, var(--blue)); }
+  .wheel-item:nth-child(3) .wheel-fill { background: linear-gradient(90deg, #5a1e99, var(--purple)); }
+  .wheel-item:nth-child(4) .wheel-fill { background: linear-gradient(90deg, #8a3010, var(--orange)); }
+  .wheel-item:nth-child(5) .wheel-fill { background: linear-gradient(90deg, #1a6655, var(--teal)); }
+  .wheel-item:nth-child(6) .wheel-fill { background: linear-gradient(90deg, #882266, var(--pink)); }
+  .wheel-item:nth-child(7) .wheel-fill { background: linear-gradient(90deg, #885500, var(--yellow)); }
+  .wheel-item:nth-child(8) .wheel-fill { background: linear-gradient(90deg, #8a3010, var(--orange)); }
+  .wheel-item:nth-child(2) .wheel-score { color: var(--blue); }
+  .wheel-item:nth-child(3) .wheel-score { color: var(--purple); }
+  .wheel-item:nth-child(4) .wheel-score { color: var(--orange); }
+  .wheel-item:nth-child(5) .wheel-score { color: var(--teal); }
+  .wheel-item:nth-child(6) .wheel-score { color: var(--pink); }
+  .wheel-item:nth-child(7) .wheel-score { color: var(--yellow); }
+  .wheel-item:nth-child(8) .wheel-score { color: var(--orange); }
+
+  /* EMPTY STATE */
+  .empty {
+    text-align: center;
+    padding: 30px;
+    color: var(--text-dim);
+    font-size: 13px;
+  }
+
+  /* TAGS */
+  .typ-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--surface2);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+
+  @media (max-width: 768px) {
+    .header { padding: 20px 20px 0; }
+    .main { padding: 20px; }
+    .grid-2, .grid-3, .today-grid { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .nav { overflow-x: auto; }
+  }
+
+  /* ── LOGIN SCREEN ─────────────────────────────────────── */
+  #loginScreen {
+    position: fixed; inset: 0; z-index: 300;
+    background: #0a0f0a;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .login-card {
+    background: #111811;
+    border: 1px solid #1e2e1e;
+    border-radius: 20px;
+    padding: 48px 40px;
+    width: 380px; max-width: 95vw;
+    text-align: center;
+    animation: modalIn 0.3s ease;
+  }
+  .login-logo {
+    font-size: 48px; margin-bottom: 16px;
+  }
+  .login-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 20px; font-weight: 700;
+    color: #e8f0e8; margin-bottom: 4px;
+  }
+  .login-title span { color: #2dff6e; }
+  .login-sub {
+    font-size: 13px; color: #6b8c6b;
+    margin-bottom: 8px; line-height: 1.6;
+  }
+  .login-tagline {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px; letter-spacing: 3px;
+    color: #3d5c3d; margin-bottom: 36px;
+  }
+  .btn-google {
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    width: 100%; padding: 14px 20px;
+    background: #162016; border: 1px solid #2dff6e44;
+    border-radius: 10px; cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px; font-weight: 600; color: #e8f0e8;
+    transition: all 0.2s; margin-bottom: 12px;
+  }
+  .btn-google:hover {
+    background: #1e2e1e; border-color: #2dff6e;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(45,255,110,0.1);
+  }
+  .btn-google svg { flex-shrink: 0; }
+  .login-privacy {
+    font-size: 11px; color: #3d5c3d; margin-top: 20px; line-height: 1.6;
+  }
+  .login-privacy strong { color: #6b8c6b; }
+  .login-error {
+    background: #2a1010; border: 1px solid #ff5c5c44;
+    border-radius: 8px; padding: 10px 14px;
+    font-size: 12px; color: #ff5c5c;
+    margin-top: 12px; display: none;
+  }
+  /* User badge in header */
+  .user-badge {
+    display: flex; align-items: center; gap: 8px;
+    background: #162016; border: 1px solid #1e2e1e;
+    border-radius: 20px; padding: 4px 12px 4px 4px;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .user-badge:hover { border-color: #2dff6e44; }
+  .user-avatar {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: #2dff6e22; border: 1px solid #2dff6e44;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; overflow: hidden;
+  }
+  .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .user-name { font-size: 11px; color: #6b8c6b; font-family: 'Space Mono', monospace; }
+  .user-menu {
+    position: absolute; top: 100%; right: 0; margin-top: 8px;
+    background: #111811; border: 1px solid #1e2e1e;
+    border-radius: 10px; padding: 8px; min-width: 160px;
+    display: none; z-index: 50;
+  }
+  .user-menu.open { display: block; }
+  .user-menu-item {
+    padding: 8px 12px; border-radius: 6px; cursor: pointer;
+    font-size: 13px; color: #6b8c6b; transition: all 0.15s;
+  }
+  .user-menu-item:hover { background: #162016; color: #e8f0e8; }
+  .user-menu-item.danger:hover { color: #ff5c5c; }
+
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">🎓</div>
+    <div class="login-title"><span>PhD</span> Life OS</div>
+    <div class="login-tagline">FOCUS · WRITE · PUBLISH</div>
+    <p class="login-sub">Melde dich an um deine Daten sicher<br>auf allen Geräten zu synchronisieren.</p>
+    <button class="btn-google" onclick="signInWithGoogle()">
+      <svg width="20" height="20" viewBox="0 0 48 48">
+        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+        <path fill="none" d="M0 0h48v48H0z"/>
+      </svg>
+      Mit Google anmelden
+    </button>
+    <div class="login-error" id="loginError"></div>
+    <p class="login-privacy">
+      🔒 <strong>Deine Daten gehören dir.</strong><br>
+      Nur du hast Zugriff. Keine Werbung, kein Tracking.
+    </p>
+  </div>
+</div>
+
+<div class="header">
+  <!-- SETUP BANNER -->
+  <div id="setupBanner" style="display:none;background:linear-gradient(90deg,#1a3a1a,#162616);border-bottom:1px solid #2dff6e33;padding:10px 40px;font-size:12px;color:#2dff6e;">
+    ⚙️ <strong>Firebase nicht konfiguriert</strong> – Daten werden nur lokal gespeichert. 
+    <a href="#setup-guide" style="color:#2dff6e;text-decoration:underline;margin-left:8px" onclick="document.getElementById('setupModal').style.display='flex'">→ Jetzt einrichten</a>
+  </div>
+
+  <div class="header-top">
+    <div class="logo-area">
+      <div class="tagline">FOCUS · WRITE · PUBLISH</div>
+      <h1><span>PhD</span> Life OS</h1>
+    </div>
+    <div class="clock-area" style="text-align:right">
+      <div id="syncStatus" style="font-size:10px;font-family:'Space Mono',monospace;color:#2dff6e;opacity:0.4;margin-bottom:4px;transition:opacity 0.5s">✅ Bereit</div>
+      <div class="clock-day" id="clockDay"></div>
+      <div class="clock-date" id="clockDate"></div>
+      <div class="clock-time" id="clockTime"></div>
+      <div style="margin-top:8px;position:relative;display:inline-block">
+        <div class="user-badge" id="userBadge" onclick="toggleUserMenu()" style="display:none">
+          <div class="user-avatar" id="userAvatar">👤</div>
+          <span class="user-name" id="userName">...</span>
+        </div>
+        <div class="user-menu" id="userMenu">
+          <div class="user-menu-item" id="userEmail" style="color:#3d5c3d;font-size:11px;cursor:default"></div>
+          <hr style="border:none;border-top:1px solid #1e2e1e;margin:6px 0">
+          <div class="user-menu-item danger" onclick="signOut()">🚪 Abmelden</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <nav class="nav">
+    <button class="nav-btn active" onclick="showTab('dashboard')">🏠 Dashboard</button>
+    <button class="nav-btn" onclick="showTab('tasks')">✅ Tasks</button>
+    <button class="nav-btn" onclick="showTab('projekte')">📁 Projekte</button>
+    <button class="nav-btn" onclick="showTab('literatur')">📚 Literatur</button>
+    <button class="nav-btn" onclick="showTab('publikationen')">✍️ Publikationen</button>
+    <button class="nav-btn" onclick="showTab('ziele')">🎯 Ziele</button>
+    <button class="nav-btn" onclick="showTab('wheel')">☯️ Wheel of Life</button>
+    <button class="nav-btn" onclick="document.getElementById('setupModal').style.display='flex'" style="margin-left:auto;color:#ffd166">⚙️ Setup</button>
+  </nav>
+</div>
+
+<div class="main">
+
+<!-- DASHBOARD TAB -->
+<div id="tab-dashboard" class="tab active">
+  <div class="stats-row" id="statsRow"></div>
+  <div class="today-grid">
+    <div class="card teal-accent">
+      <div class="card-header">
+        <div class="card-title"><div class="dot teal"></div> HEUTE – TOP TASKS</div>
+        <button class="btn-add" onclick="openModal('task')">+ NEU</button>
+      </div>
+      <div id="todayTasks"></div>
+    </div>
+    <div class="card yellow-accent">
+      <div class="card-header">
+        <div class="card-title"><div class="dot yellow"></div> AKTIVE PROJEKTE</div>
+      </div>
+      <div id="dashProjects"></div>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="card blue-accent" style="grid-column: span 2;">
+      <div class="card-header">
+        <div class="card-title"><div class="dot blue"></div> 📅 KALENDER & TÄGLICHE TASKS</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px">
+        <!-- CALENDAR -->
+        <div>
+          <div class="cal-header">
+            <button class="cal-nav" onclick="calPrev()">‹</button>
+            <div class="cal-month" id="calMonth"></div>
+            <button class="cal-nav" onclick="calNext()">›</button>
+          </div>
+          <div class="cal-grid" id="calGrid"></div>
+        </div>
+        <!-- DAY PANEL -->
+        <div>
+          <div class="day-panel-title" id="dayPanelTitle">HEUTE</div>
+          <div id="dayTasks"></div>
+          <div class="cal-add-row">
+            <input class="cal-add-input" id="calTaskInput" placeholder="Neue Aufgabe…" onkeydown="if(event.key==='Enter')addCalTask()">
+            <input type="time" class="cal-tag-select" id="calTaskTime" value="09:00" style="width:90px;font-family:'Space Mono',monospace;font-size:12px;">
+            <select class="cal-tag-select" id="calTaskTag">
+              <option value="🔬 Forschung">🔬</option>
+              <option value="✍️ Schreiben">✍️</option>
+              <option value="📊 Daten">📊</option>
+              <option value="🗓️ Admin">🗓️</option>
+              <option value="🏠 Privat">🏠</option>
+            </select>
+            <button class="cal-add-btn" onclick="addCalTask()">+ ADD</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card pink-accent">
+      <div class="card-header">
+        <div class="card-title"><div class="dot purple"></div> ☯️ WHEEL OF LIFE</div>
+      </div>
+      <div class="wheel-grid" id="wheelGrid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TASKS TAB -->
+<div id="tab-tasks" class="tab">
+  <div class="card-header" style="margin-bottom:20px">
+    <div class="section-title">ALLE AUFGABEN</div>
+    <button class="btn-add" onclick="openModal('task')">+ NEUE AUFGABE</button>
+  </div>
+  <div id="taskList"></div>
+</div>
+
+<!-- PROJEKTE TAB -->
+<div id="tab-projekte" class="tab">
+  <div class="card-header" style="margin-bottom:20px">
+    <div class="section-title">PROJEKTE & EXPERIMENTE</div>
+    <button class="btn-add" onclick="openModal('projekt')">+ NEUES PROJEKT</button>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><div class="dot"></div> AKTIVE PROJEKTE</div>
+      </div>
+      <div id="aktiveProjekte"></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><div class="dot yellow"></div> PAUSIERT / IDEEN</div>
+      </div>
+      <div id="pausedProjekte"></div>
+    </div>
+  </div>
+</div>
+
+<!-- LITERATUR TAB -->
+<div id="tab-literatur" class="tab">
+  <div class="card-header" style="margin-bottom:20px">
+    <div class="section-title">LITERATUR & QUELLEN</div>
+    <button class="btn-add" onclick="openModal('literatur')">+ NEUE QUELLE</button>
+  </div>
+  <div id="literaturList"></div>
+</div>
+
+<!-- PUBLIKATIONEN TAB -->
+<div id="tab-publikationen" class="tab">
+  <div class="card-header" style="margin-bottom:20px">
+    <div class="section-title">PUBLIKATIONEN</div>
+    <button class="btn-add" onclick="openModal('publikation')">+ NEUE PUBLIKATION</button>
+  </div>
+  <div id="pubList"></div>
+</div>
+
+<!-- ZIELE TAB -->
+<div id="tab-ziele" class="tab">
+  <div class="card-header" style="margin-bottom:20px">
+    <div class="section-title">ZIELE</div>
+    <button class="btn-add" onclick="openModal('ziel')">+ NEUES ZIEL</button>
+  </div>
+  <div id="zieleList"></div>
+</div>
+
+<!-- WHEEL TAB -->
+<div id="tab-wheel" class="tab">
+  <div class="section-title" style="margin-bottom:20px">WHEEL OF LIFE – MONATLICHE REFLEXION</div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title" style="margin-bottom:20px"><div class="dot"></div> BEWERTUNG (1–10)</div>
+      <div id="wheelEdit"></div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:20px"><div class="dot blue"></div> REFLEXION</div>
+      <div class="form-group"><label>Was lief gut diesen Monat?</label><textarea rows="3" id="refGut" style="resize:none" oninput="saveWheel()"></textarea></div>
+      <div class="form-group"><label>Was möchte ich verbessern?</label><textarea rows="3" id="refVerb" style="resize:none" oninput="saveWheel()"></textarea></div>
+      <div class="form-group"><label>Fokus nächsten Monat</label><textarea rows="2" id="refFokus" style="resize:none" oninput="saveWheel()"></textarea></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end main -->
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <h2 id="modalTitle">NEUER EINTRAG</h2>
+    <div id="modalBody"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Abbrechen</button>
+      <button class="btn-save" onclick="saveModal()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────────────────────────
+let data = {
+  projekte: [
+    { id: 1, name: 'Dissertation Kapitel 2', status: 'aktiv', typ: '✍️ Schreiben', fortschritt: 65, deadline: '2026-03-15', notiz: '' },
+    { id: 2, name: 'Experiment A – Messreihe', status: 'aktiv', typ: '🧪 Experiment', fortschritt: 40, deadline: '2026-03-30', notiz: '' },
+    { id: 3, name: 'Paper für Journal X', status: 'aktiv', typ: '✍️ Schreiben', fortschritt: 20, deadline: '2026-04-01', notiz: '' },
+    { id: 4, name: 'Datenanalyse Reihe B', status: 'aktiv', typ: '📊 Daten', fortschritt: 80, deadline: '2026-03-10', notiz: '' },
+    { id: 5, name: 'Literaturreview Thema Y', status: 'pausiert', typ: '📖 Literatur', fortschritt: 45, deadline: '', notiz: 'Pausiert seit Jan 2026' },
+    { id: 6, name: 'Konferenz-Poster 2026', status: 'idee', typ: '🎤 Konferenz', fortschritt: 10, deadline: '2026-05-01', notiz: 'Idee · Start: Mai 2026' },
+  ],
+  tasks: [
+    { id: 1, name: 'Literaturrecherche Kapitel 2', status: 'offen', prio: 'hoch', bereich: '🔬 Forschung', deadline: new Date().toISOString().split('T')[0], done: false },
+    { id: 2, name: 'Betreuer-Meeting vorbereiten', status: 'offen', prio: 'hoch', bereich: '🗓️ Admin', deadline: new Date().toISOString().split('T')[0], done: false },
+    { id: 3, name: 'Experiment A Daten auswerten', status: 'offen', prio: 'mittel', bereich: '📊 Daten', deadline: new Date().toISOString().split('T')[0], done: false },
+  ],
+  literatur: [
+    { id: 1, titel: 'Deep Learning in Science', autoren: 'LeCun et al.', jahr: 2021, typ: 'Paper', status: 'gelesen', bewertung: 3, notiz: '' },
+    { id: 2, titel: 'Research Methods Handbook', autoren: 'Smith, J.', jahr: 2019, typ: 'Buch', status: 'in_lektuere', bewertung: 2, notiz: '' },
+  ],
+  publikationen: [
+    { id: 1, titel: 'Novel Approach to X', typ: 'Paper', status: 'entwurf', journal: 'Nature', deadline: '2026-04-01', woerter: 2100, ziel: 8000 },
+  ],
+  ziele: [
+    { id: 1, ziel: 'Paper bei Journal X einreichen', bereich: '🔬 Forschung', zeitraum: 'Quartal', status: 'in_arbeit', fortschritt: 40, warum: 'Karriere voranbringen' },
+    { id: 2, ziel: 'Täglich 30 Min Sport', bereich: '🏃 Gesundheit', zeitraum: 'Monat', status: 'in_arbeit', fortschritt: 70, warum: 'Gesundheit & Energie' },
+    { id: 3, ziel: 'Dissertation Kapitel 2 fertig', bereich: '🔬 Forschung', zeitraum: 'Quartal', status: 'in_arbeit', fortschritt: 65, warum: 'Abschluss 2026' },
+  ],
+  wheel: { forschung: 7, gesundheit: 6, soziales: 5, finanzen: 6, lernen: 8, hobbys: 4, erholung: 5, mental: 7 },
+  wheelText: { gut: '', verb: '', fokus: '' },
+  pomodoros: 0,
+  nextId: 100,
+};
+
+// ─── FIREBASE CONFIG ─────────────────────────────────────────────────────────
+// SCHRITT 1: Ersetze diese Werte mit deinen eigenen Firebase-Daten
+// (Anleitung am Ende dieser Datei)
+const firebaseConfig = {
+  apiKey: "DEIN_API_KEY",
+  authDomain: "DEIN_PROJECT.firebaseapp.com",
+  databaseURL: "https://DEIN_PROJECT-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "DEIN_PROJECT_ID",
+  storageBucket: "DEIN_PROJECT.appspot.com",
+  messagingSenderId: "DEINE_SENDER_ID",
+  appId: "DEINE_APP_ID"
+};
+
+let db = null;
+let firebaseReady = false;
+let saveTimeout = null;
+
+let currentUser = null;
+
+function initFirebase() {
+  try {
+    if (firebaseConfig.apiKey === "DEIN_API_KEY") {
+      showSetupBanner();
+      hideLoginScreen();
+      return;
+    }
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+
+    // Watch auth state
+    firebase.auth().onAuthStateChanged((user) => {
+      if (user) {
+        currentUser = user;
+        hideLoginScreen();
+        showUserBadge(user);
+        firebaseReady = true;
+        loadFromFirebase(user.uid);
+        showSyncStatus('🔄 Verbinde...');
+      } else {
+        currentUser = null;
+        firebaseReady = false;
+        showLoginScreen();
+      }
+    });
+  } catch(e) {
+    console.warn('Firebase init failed, using localStorage', e);
+    hideLoginScreen();
+    loadFromLocal();
+  }
+}
+
+function signInWithGoogle() {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  firebase.auth().signInWithPopup(provider).catch((err) => {
+    const errEl = document.getElementById('loginError');
+    if (errEl) { errEl.style.display = 'block'; errEl.textContent = 'Fehler: ' + err.message; }
+  });
+}
+
+function signOut() {
+  firebase.auth().signOut().then(() => {
+    toggleUserMenu();
+    loadFromLocal();
+    renderAll();
+    renderCalendar();
+  });
+}
+
+function showLoginScreen() {
+  const s = document.getElementById('loginScreen');
+  if (s) s.style.display = 'flex';
+}
+
+function hideLoginScreen() {
+  const s = document.getElementById('loginScreen');
+  if (s) s.style.display = 'none';
+}
+
+function showUserBadge(user) {
+  const badge = document.getElementById('userBadge');
+  const avatar = document.getElementById('userAvatar');
+  const name = document.getElementById('userName');
+  const email = document.getElementById('userEmail');
+  if (badge) badge.style.display = 'flex';
+  if (name) name.textContent = user.displayName ? user.displayName.split(' ')[0] : 'User';
+  if (email) email.textContent = user.email;
+  if (avatar && user.photoURL) avatar.innerHTML = `<img src="${user.photoURL}" alt="">`;
+}
+
+function toggleUserMenu() {
+  const menu = document.getElementById('userMenu');
+  if (menu) menu.classList.toggle('open');
+}
+
+// Close menu on outside click
+document.addEventListener('click', (e) => {
+  const badge = document.getElementById('userBadge');
+  const menu = document.getElementById('userMenu');
+  if (menu && badge && !badge.contains(e.target)) menu.classList.remove('open');
+});
+
+function loadFromFirebase(uid) {
+  if (!db || !uid) return;
+  db.ref('phdOS/users/' + uid).on('value', (snapshot) => {
+    const val = snapshot.val();
+    if (val) {
+      data = val;
+      if (!data.calTasks) data.calTasks = {};
+    }
+    renderAll();
+    renderCalendar();
+    showSyncStatus('✅ Synchronisiert');
+  }, (err) => {
+    console.warn('Firebase load error, using localStorage', err);
+    loadFromLocal();
+  });
+}
+
+function save() {
+  // Always save locally as backup
+  try { localStorage.setItem('phdOS', JSON.stringify(data)); } catch(e){}
+  // Debounced Firebase save
+  if (firebaseReady && db && currentUser) {
+    if (saveTimeout) clearTimeout(saveTimeout);
+    showSyncStatus('💾 Speichere...');
+    saveTimeout = setTimeout(() => {
+      db.ref('phdOS/users/' + currentUser.uid).set(data)
+        .then(() => showSyncStatus('✅ Synchronisiert'))
+        .catch(() => showSyncStatus('⚠️ Offline – lokal gespeichert'));
+    }, 800);
+  }
+}
+
+function loadFromLocal() {
+  try { const d = localStorage.getItem('phdOS'); if(d) data = JSON.parse(d); } catch(e){}
+  if (!data.calTasks) data.calTasks = {};
+}
+
+function showSyncStatus(msg) {
+  const el = document.getElementById('syncStatus');
+  if (el) { el.textContent = msg; el.style.opacity = '1'; setTimeout(() => el.style.opacity = '0.4', 2000); }
+}
+
+function showSetupBanner() {
+  const banner = document.getElementById('setupBanner');
+  if (banner) banner.style.display = 'block';
+}
+
+// Load local data initially, Firebase will override when ready
+loadFromLocal();
+initFirebase();
+
+// ─── CLOCK ──────────────────────────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  const days = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
+  const months = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+  document.getElementById('clockDay').textContent = days[now.getDay()];
+  document.getElementById('clockDate').textContent = `${now.getDate()}. ${months[now.getMonth()]} ${now.getFullYear()}`;
+  document.getElementById('clockTime').textContent = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// ─── TABS ────────────────────────────────────────────────────────────────────
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.currentTarget.classList.add('active');
+  renderAll();
+}
+
+// ─── RENDER ──────────────────────────────────────────────────────────────────
+function renderAll() {
+  renderStats();
+  renderDashProjects();
+  renderTodayTasks();
+  renderProjekte();
+  renderTasks();
+  renderLiteratur();
+  renderPub();
+  renderZiele();
+  renderWheel();
+  renderCalendar();
+}
+
+function typColor(typ) {
+  if (!typ) return '';
+  if (typ.includes('Schreiben') || typ.includes('Paper') || typ.includes('Diss')) return 'blue';
+  if (typ.includes('Experiment') || typ.includes('Daten')) return 'purple';
+  if (typ.includes('Konferenz')) return 'orange';
+  if (typ.includes('Literatur')) return 'yellow';
+  return '';
+}
+
+function pctColor(p) { return p >= 70 ? '' : p >= 40 ? 'mid' : 'low'; }
+
+function renderStats() {
+  const aktiv = data.projekte.filter(p => p.status === 'aktiv').length;
+  const offen = data.tasks.filter(t => !t.done).length;
+  const lit = data.literatur.length;
+  const avg = data.projekte.length ? Math.round(data.projekte.reduce((a,p) => a + p.fortschritt, 0) / data.projekte.length) : 0;
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Aktive Projekte</div><div class="stat-value">${aktiv}</div><div class="stat-sub">von ${data.projekte.length} gesamt</div></div>
+    <div class="stat-card"><div class="stat-label">Offene Tasks</div><div class="stat-value">${offen}</div><div class="stat-sub">heute fällig</div></div>
+    <div class="stat-card"><div class="stat-label">Literatur</div><div class="stat-value">${lit}</div><div class="stat-sub">Quellen gespeichert</div></div>
+    <div class="stat-card"><div class="stat-label">Ø Fortschritt</div><div class="stat-value">${avg}%</div><div class="stat-sub">alle Projekte</div></div>
+  `;
+}
+
+function renderDashProjects() {
+  const el = document.getElementById('dashProjects');
+  const aktiv = data.projekte.filter(p => p.status === 'aktiv').slice(0,4);
+  if (!aktiv.length) { el.innerHTML = '<div class="empty">Keine aktiven Projekte</div>'; return; }
+  el.innerHTML = aktiv.map(p => `
+    <div class="project-item" onclick="showTab2('projekte')">
+      <div class="project-top">
+        <div class="project-name">${p.name}</div>
+        <div class="project-pct ${pctColor(p.fortschritt)}">${p.fortschritt}%</div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill ${typColor(p.typ)}" style="width:${p.fortschritt}%"></div></div>
+      <div class="project-meta">${p.deadline ? 'Deadline: ' + formatDate(p.deadline) + ' · ' : ''}${p.typ}</div>
+    </div>`).join('');
+}
+
+function showTab2(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.querySelectorAll('.nav-btn')[['dashboard','tasks','projekte','literatur','publikationen','ziele','wheel'].indexOf(name)].classList.add('active');
+  renderAll();
+}
+
+function renderTodayTasks() {
+  const el = document.getElementById('todayTasks');
+  const today = new Date().toISOString().split('T')[0];
+  const tasks = data.tasks.filter(t => t.deadline === today).slice(0,5);
+  if (!tasks.length) { el.innerHTML = '<div class="empty">Keine Tasks für heute</div>'; return; }
+  el.innerHTML = tasks.map(t => `
+    <div class="task-item">
+      <div class="task-check ${t.done?'done':''}" onclick="toggleTask(${t.id})"></div>
+      <div class="task-text ${t.done?'done':''}">${t.name}</div>
+      <div class="task-tag">${t.bereich.split(' ')[0]}</div>
+    </div>`).join('');
+}
+
+function toggleTask(id) {
+  const t = data.tasks.find(t => t.id === id);
+  if(t) { t.done = !t.done; save(); renderAll(); }
+}
+
+function renderProjekte() {
+  const aktiv = data.projekte.filter(p => p.status === 'aktiv');
+  const paused = data.projekte.filter(p => p.status !== 'aktiv');
+  const renderList = (items, elId) => {
+    const el = document.getElementById(elId);
+    if (!items.length) { el.innerHTML = '<div class="empty">Keine Einträge</div>'; return; }
+    el.innerHTML = items.map(p => `
+      <div class="project-item">
+        <div class="project-top">
+          <div class="project-name">${p.name}</div>
+          <div class="project-pct ${pctColor(p.fortschritt)}">${p.fortschritt}%</div>
+        </div>
+        <div class="progress-bar"><div class="progress-fill ${typColor(p.typ)}" style="width:${p.fortschritt}%"></div></div>
+        <div class="project-meta">${p.deadline ? 'Deadline: ' + formatDate(p.deadline) + ' · ' : ''}${p.typ}${p.notiz?' · '+p.notiz:''}</div>
+        <div class="project-actions">
+          <button class="btn-sm" onclick="editItem('projekt',${p.id})">✏️ Bearbeiten</button>
+          <button class="btn-sm danger" onclick="deleteItem('projekt',${p.id})">🗑️ Löschen</button>
+        </div>
+      </div>`).join('');
+  };
+  renderList(aktiv, 'aktiveProjekte');
+  renderList(paused, 'pausedProjekte');
+}
+
+function renderTasks() {
+  const el = document.getElementById('taskList');
+  if (!data.tasks.length) { el.innerHTML = '<div class="card"><div class="empty">Noch keine Tasks. Füge deine erste Aufgabe hinzu!</div></div>'; return; }
+  const groups = {};
+  data.tasks.forEach(t => { if(!groups[t.bereich]) groups[t.bereich] = []; groups[t.bereich].push(t); });
+  el.innerHTML = Object.entries(groups).map(([bereich, tasks]) => `
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title" style="margin-bottom:16px"><div class="dot"></div> ${bereich}</div>
+      ${tasks.map(t => `
+        <div class="task-item">
+          <div class="task-check ${t.done?'done':''}" onclick="toggleTask(${t.id})"></div>
+          <div class="task-text ${t.done?'done':''}" style="flex:1">${t.name}</div>
+          <div class="task-tag">${t.prio}</div>
+          ${t.deadline ? `<div class="task-tag">${formatDate(t.deadline)}</div>` : ''}
+          <button class="btn-sm" onclick="editItem('task',${t.id})">✏️</button>
+          <button class="btn-sm danger" onclick="deleteItem('task',${t.id})">🗑️</button>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+function renderLiteratur() {
+  const el = document.getElementById('literaturList');
+  if (!data.literatur.length) { el.innerHTML = '<div class="card"><div class="empty">Noch keine Literatur. Füge deine erste Quelle hinzu!</div></div>'; return; }
+  el.innerHTML = `<div class="card"><div style="display:grid;gap:12px">${data.literatur.map(l => `
+    <div style="padding:14px;background:var(--surface2);border-radius:8px;border:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+        <div style="font-weight:500;font-size:14px">${l.titel}</div>
+        <div style="display:flex;gap:6px;flex-shrink:0;margin-left:12px">
+          <button class="btn-sm" onclick="editItem('literatur',${l.id})">✏️</button>
+          <button class="btn-sm danger" onclick="deleteItem('literatur',${l.id})">🗑️</button>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--text-muted)">${l.autoren} · ${l.jahr} · ${l.typ}</div>
+      <div style="font-size:11px;color:var(--accent);margin-top:4px">${'⭐'.repeat(l.bewertung)} · ${statusLabel(l.status)}</div>
+    </div>`).join('')}</div></div>`;
+}
+
+function renderPub() {
+  const el = document.getElementById('pubList');
+  if (!data.publikationen.length) { el.innerHTML = '<div class="card"><div class="empty">Noch keine Publikationen.</div></div>'; return; }
+  el.innerHTML = `<div style="display:grid;gap:16px">${data.publikationen.map(p => `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+        <div>
+          <div style="font-size:16px;font-weight:500;margin-bottom:4px">${p.titel}</div>
+          <div style="font-size:12px;color:var(--text-muted)">${p.typ} · ${p.journal || '–'} · ${statusLabel(p.status)}</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn-sm" onclick="editItem('publikation',${p.id})">✏️</button>
+          <button class="btn-sm danger" onclick="deleteItem('publikation',${p.id})">🗑️</button>
+        </div>
+      </div>
+      ${p.ziel ? `
+        <div style="margin-bottom:6px;font-size:12px;color:var(--text-muted)">Wörter: ${p.woerter} / ${p.ziel}</div>
+        <div class="progress-bar" style="height:5px"><div class="progress-fill" style="width:${Math.round(p.woerter/p.ziel*100)}%"></div></div>` : ''}
+      ${p.deadline ? `<div style="font-size:12px;color:var(--text-muted);margin-top:8px">Deadline: ${formatDate(p.deadline)}</div>` : ''}
+    </div>`).join('')}</div>`;
+}
+
+function renderZiele() {
+  const el = document.getElementById('zieleList');
+  if (!data.ziele.length) { el.innerHTML = '<div class="card"><div class="empty">Noch keine Ziele.</div></div>'; return; }
+  el.innerHTML = `<div class="grid-3">${data.ziele.map(z => `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;margin-bottom:12px">
+        <div class="typ-tag">${z.bereich}</div>
+        <div style="display:flex;gap:6px">
+          <button class="btn-sm" onclick="editItem('ziel',${z.id})">✏️</button>
+          <button class="btn-sm danger" onclick="deleteItem('ziel',${z.id})">🗑️</button>
+        </div>
+      </div>
+      <div style="font-size:15px;font-weight:500;margin-bottom:8px">${z.ziel}</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">${z.zeitraum} · ${statusLabel(z.status)}</div>
+      <div class="project-top"><span style="font-size:12px;color:var(--text-muted)">Fortschritt</span><span class="project-pct ${pctColor(z.fortschritt)}">${z.fortschritt}%</span></div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${z.fortschritt}%"></div></div>
+      ${z.warum ? `<div style="font-size:11px;color:var(--text-dim);margin-top:8px">💡 ${z.warum}</div>` : ''}
+    </div>`).join('')}</div>`;
+}
+
+const wheelFields = [
+  { key: 'forschung', label: '🔬 Forschung' },
+  { key: 'gesundheit', label: '🏃 Gesundheit' },
+  { key: 'soziales', label: '👥 Soziales' },
+  { key: 'finanzen', label: '💰 Finanzen' },
+  { key: 'lernen', label: '🧠 Lernen' },
+  { key: 'hobbys', label: '🎨 Hobbys' },
+  { key: 'erholung', label: '😴 Erholung' },
+  { key: 'mental', label: '🧘 Mental' },
+];
+
+function renderWheel() {
+  const el = document.getElementById('wheelGrid');
+  el.innerHTML = wheelFields.map(f => `
+    <div class="wheel-item">
+      <div class="wheel-label">${f.label}<span class="wheel-score">${data.wheel[f.key]}/10</span></div>
+      <div class="wheel-bar"><div class="wheel-fill" style="width:${data.wheel[f.key]*10}%"></div></div>
+    </div>`).join('');
+
+  const edit = document.getElementById('wheelEdit');
+  edit.innerHTML = wheelFields.map(f => `
+    <div class="form-group">
+      <label>${f.label}</label>
+      <div class="range-wrap">
+        <input type="range" min="1" max="10" value="${data.wheel[f.key]}" oninput="updateWheel('${f.key}',this.value)">
+        <span class="range-val" id="wv_${f.key}">${data.wheel[f.key]}</span>
+      </div>
+    </div>`).join('');
+
+  const gt = document.getElementById('refGut');
+  const vt = document.getElementById('refVerb');
+  const ft = document.getElementById('refFokus');
+  if(gt) gt.value = data.wheelText.gut || '';
+  if(vt) vt.value = data.wheelText.verb || '';
+  if(ft) ft.value = data.wheelText.fokus || '';
+}
+
+function updateWheel(key, val) {
+  data.wheel[key] = parseInt(val);
+  document.getElementById('wv_' + key).textContent = val;
+  save();
+  renderWheel();
+}
+
+function saveWheel() {
+  data.wheelText.gut = document.getElementById('refGut').value;
+  data.wheelText.verb = document.getElementById('refVerb').value;
+  data.wheelText.fokus = document.getElementById('refFokus').value;
+  save();
+}
+
+// ─── MODAL ───────────────────────────────────────────────────────────────────
+let modalMode = null;
+let editId = null;
+
+function openModal(type, item) {
+  modalMode = type;
+  editId = item ? item.id : null;
+  const titles = { projekt: 'PROJEKT', task: 'AUFGABE', literatur: 'LITERATUR', publikation: 'PUBLIKATION', ziel: 'ZIEL' };
+  document.getElementById('modalTitle').textContent = (editId ? 'BEARBEITEN – ' : 'NEU – ') + titles[type];
+  document.getElementById('modalBody').innerHTML = getForm(type, item);
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function getForm(type, item) {
+  const v = item || {};
+  if (type === 'projekt') return `
+    <div class="form-group"><label>Name</label><input id="f_name" value="${v.name||''}"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Status</label><select id="f_status">
+        <option value="aktiv" ${v.status==='aktiv'?'selected':''}>🚀 Aktiv</option>
+        <option value="pausiert" ${v.status==='pausiert'?'selected':''}>⏸️ Pausiert</option>
+        <option value="idee" ${v.status==='idee'?'selected':''}>💡 Idee</option>
+        <option value="fertig" ${v.status==='fertig'?'selected':''}>✅ Fertig</option>
+      </select></div>
+      <div class="form-group"><label>Typ</label><select id="f_typ">
+        <option value="✍️ Schreiben">✍️ Schreiben</option>
+        <option value="🧪 Experiment">🧪 Experiment</option>
+        <option value="📊 Daten">📊 Daten</option>
+        <option value="📖 Literatur">📖 Literatur</option>
+        <option value="🎤 Konferenz">🎤 Konferenz</option>
+        <option value="🗓️ Admin">🗓️ Admin</option>
+      </select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Fortschritt (%)</label>
+        <div class="range-wrap"><input type="range" min="0" max="100" value="${v.fortschritt||0}" id="f_fortschritt" oninput="document.getElementById('fv_fort').textContent=this.value+'%'">
+        <span class="range-val" id="fv_fort">${v.fortschritt||0}%</span></div>
+      </div>
+      <div class="form-group"><label>Deadline</label><input type="date" id="f_deadline" value="${v.deadline||''}"></div>
+    </div>
+    <div class="form-group"><label>Notiz</label><input id="f_notiz" value="${v.notiz||''}"></div>`;
+
+  if (type === 'task') return `
+    <div class="form-group"><label>Aufgabe</label><input id="f_name" value="${v.name||''}"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Priorität</label><select id="f_prio">
+        <option value="hoch" ${v.prio==='hoch'?'selected':''}>🔥 Hoch</option>
+        <option value="mittel" ${v.prio==='mittel'?'selected':''}>🔶 Mittel</option>
+        <option value="niedrig" ${v.prio==='niedrig'?'selected':''}>🔷 Niedrig</option>
+      </select></div>
+      <div class="form-group"><label>Bereich</label><select id="f_bereich">
+        <option value="🔬 Forschung">🔬 Forschung</option>
+        <option value="✍️ Schreiben">✍️ Schreiben</option>
+        <option value="📊 Daten">📊 Daten</option>
+        <option value="🗓️ Admin">🗓️ Admin</option>
+        <option value="🏠 Privat">🏠 Privat</option>
+      </select></div>
+    </div>
+    <div class="form-group"><label>Fälligkeitsdatum</label><input type="date" id="f_deadline" value="${v.deadline||''}"></div>`;
+
+  if (type === 'literatur') return `
+    <div class="form-group"><label>Titel</label><input id="f_titel" value="${v.titel||''}"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Autoren</label><input id="f_autoren" value="${v.autoren||''}"></div>
+      <div class="form-group"><label>Jahr</label><input type="number" id="f_jahr" value="${v.jahr||''}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Typ</label><select id="f_typ">
+        <option>Paper</option><option>Buch</option><option>Website</option>
+      </select></div>
+      <div class="form-group"><label>Status</label><select id="f_status">
+        <option value="zu_lesen">📥 Zu lesen</option>
+        <option value="in_lektuere">📖 In Lektüre</option>
+        <option value="gelesen">✅ Gelesen</option>
+        <option value="wichtig">⭐ Wichtig</option>
+      </select></div>
+    </div>
+    <div class="form-group"><label>Bewertung</label><select id="f_bewertung">
+      <option value="1">⭐</option><option value="2">⭐⭐</option><option value="3">⭐⭐⭐</option>
+    </select></div>`;
+
+  if (type === 'publikation') return `
+    <div class="form-group"><label>Titel</label><input id="f_titel" value="${v.titel||''}"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Typ</label><select id="f_typ">
+        <option>Paper</option><option>Dissertation</option><option>Konferenz</option><option>Report</option>
+      </select></div>
+      <div class="form-group"><label>Status</label><select id="f_status">
+        <option value="idee">💡 Idee</option>
+        <option value="entwurf">✏️ Entwurf</option>
+        <option value="review">🔄 Review</option>
+        <option value="eingereicht">📤 Eingereicht</option>
+        <option value="veroeffentlicht">✅ Veröffentlicht</option>
+      </select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Journal / Konferenz</label><input id="f_journal" value="${v.journal||''}"></div>
+      <div class="form-group"><label>Deadline</label><input type="date" id="f_deadline" value="${v.deadline||''}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Wörter aktuell</label><input type="number" id="f_woerter" value="${v.woerter||0}"></div>
+      <div class="form-group"><label>Wörter Ziel</label><input type="number" id="f_ziel" value="${v.ziel||0}"></div>
+    </div>`;
+
+  if (type === 'ziel') return `
+    <div class="form-group"><label>Ziel</label><input id="f_ziel" value="${v.ziel||''}"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Bereich</label><select id="f_bereich">
+        <option value="🔬 Forschung">🔬 Forschung</option>
+        <option value="🏃 Gesundheit">🏃 Gesundheit</option>
+        <option value="💰 Finanzen">💰 Finanzen</option>
+        <option value="👥 Soziales">👥 Soziales</option>
+        <option value="🧘 Persönlich">🧘 Persönlich</option>
+      </select></div>
+      <div class="form-group"><label>Zeitraum</label><select id="f_zeitraum">
+        <option>Monat</option><option>Quartal</option><option>Jahr</option>
+      </select></div>
+    </div>
+    <div class="form-group"><label>Fortschritt (%)</label>
+      <div class="range-wrap"><input type="range" min="0" max="100" value="${v.fortschritt||0}" id="f_fortschritt" oninput="document.getElementById('fv_z').textContent=this.value+'%'">
+      <span class="range-val" id="fv_z">${v.fortschritt||0}%</span></div>
+    </div>
+    <div class="form-group"><label>Warum? (Motivation)</label><input id="f_warum" value="${v.warum||''}"></div>`;
+}
+
+function g(id) { const el = document.getElementById(id); return el ? el.value : ''; }
+
+function saveModal() {
+  const id = editId || ++data.nextId;
+  if (modalMode === 'projekt') {
+    const obj = { id, name: g('f_name'), status: g('f_status'), typ: g('f_typ'),
+      fortschritt: parseInt(g('f_fortschritt')||0), deadline: g('f_deadline'), notiz: g('f_notiz') };
+    if (editId) { const i = data.projekte.findIndex(p => p.id === editId); data.projekte[i] = obj; }
+    else data.projekte.push(obj);
+  } else if (modalMode === 'task') {
+    const obj = { id, name: g('f_name'), prio: g('f_prio'), bereich: g('f_bereich'), deadline: g('f_deadline'), done: false };
+    if (editId) { const i = data.tasks.findIndex(t => t.id === editId); data.tasks[i] = obj; }
+    else data.tasks.push(obj);
+  } else if (modalMode === 'literatur') {
+    const obj = { id, titel: g('f_titel'), autoren: g('f_autoren'), jahr: parseInt(g('f_jahr')||0),
+      typ: g('f_typ'), status: g('f_status'), bewertung: parseInt(g('f_bewertung')||1) };
+    if (editId) { const i = data.literatur.findIndex(l => l.id === editId); data.literatur[i] = obj; }
+    else data.literatur.push(obj);
+  } else if (modalMode === 'publikation') {
+    const obj = { id, titel: g('f_titel'), typ: g('f_typ'), status: g('f_status'),
+      journal: g('f_journal'), deadline: g('f_deadline'),
+      woerter: parseInt(g('f_woerter')||0), ziel: parseInt(g('f_ziel')||0) };
+    if (editId) { const i = data.publikationen.findIndex(p => p.id === editId); data.publikationen[i] = obj; }
+    else data.publikationen.push(obj);
+  } else if (modalMode === 'ziel') {
+    const obj = { id, ziel: g('f_ziel'), bereich: g('f_bereich'), zeitraum: g('f_zeitraum'),
+      status: 'in_arbeit', fortschritt: parseInt(g('f_fortschritt')||0), warum: g('f_warum') };
+    if (editId) { const i = data.ziele.findIndex(z => z.id === editId); data.ziele[i] = obj; }
+    else data.ziele.push(obj);
+  }
+  save();
+  closeModal();
+  renderAll();
+}
+
+function editItem(type, id) {
+  const maps = { projekt: data.projekte, task: data.tasks, literatur: data.literatur, publikation: data.publikationen, ziel: data.ziele };
+  const item = maps[type].find(i => i.id === id);
+  openModal(type, item);
+}
+
+function deleteItem(type, id) {
+  if (!confirm('Wirklich löschen?')) return;
+  const maps = { projekt: 'projekte', task: 'tasks', literatur: 'literatur', publikation: 'publikationen', ziel: 'ziele' };
+  data[maps[type]] = data[maps[type]].filter(i => i.id !== id);
+  save(); renderAll();
+}
+
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); editId = null; }
+function closeModalOutside(e) { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
+
+// ─── CALENDAR ────────────────────────────────────────────────────────────────
+if (!data.calTasks) data.calTasks = {};
+
+let calDate = new Date();
+let calSelected = new Date().toISOString().split('T')[0];
+
+function calKey(y, m, d) {
+  return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+}
+
+function renderCalendar() {
+  const months = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+  const year = calDate.getFullYear();
+  const month = calDate.getMonth();
+  const monthEl = document.getElementById('calMonth');
+  if (monthEl) monthEl.textContent = `${months[month]} ${year}`;
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const start = (firstDay === 0 ? 6 : firstDay - 1);
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const daysInPrev = new Date(year, month, 0).getDate();
+  const today = new Date().toISOString().split('T')[0];
+
+  const dows = ['Mo','Di','Mi','Do','Fr','Sa','So'];
+  let html = dows.map(d => `<div class="cal-dow">${d}</div>`).join('');
+
+  let cells = [];
+  for (let i = start - 1; i >= 0; i--) cells.push({ day: daysInPrev - i, cur: false });
+  for (let i = 1; i <= daysInMonth; i++) cells.push({ day: i, cur: true });
+  while (cells.length % 7 !== 0) cells.push({ day: cells.length - start - daysInMonth + 1, cur: false });
+
+  cells.forEach(c => {
+    const key = c.cur ? calKey(year, month, c.day) : '';
+    const tasks = (key && data.calTasks[key]) || [];
+    const isToday = key === today;
+    const isSel = key === calSelected;
+    const dotHtml = tasks.slice(0,5).map(t => `<div class="cal-dot ${t.done?'done':''}"></div>`).join('');
+    html += `<div class="cal-day ${!c.cur?'other-month':''} ${isToday?'today':''} ${isSel?'selected':''}" ${c.cur?`onclick="selectDay('${key}')"`:''}>
+      <div class="cal-day-num">${c.day}</div>
+      ${tasks.length ? `<div class="cal-dots">${dotHtml}</div>` : ''}
+    </div>`;
+  });
+
+  const gridEl = document.getElementById('calGrid');
+  if (gridEl) gridEl.innerHTML = html;
+  renderDayPanel();
+}
+
+function selectDay(key) {
+  calSelected = key;
+  renderCalendar();
+}
+
+function renderDayPanel() {
+  const months = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+  const [y, m, d] = calSelected.split('-');
+  const today = new Date().toISOString().split('T')[0];
+  const label = calSelected === today ? `HEUTE · ${parseInt(d)}. ${months[parseInt(m)-1]}` : `${parseInt(d)}. ${months[parseInt(m)-1]} ${y}`;
+
+  const titleEl = document.getElementById('dayPanelTitle');
+  if (titleEl) titleEl.textContent = label;
+
+  const tasks = data.calTasks[calSelected] || [];
+  const el = document.getElementById('dayTasks');
+  if (!el) return;
+
+  if (!tasks.length) {
+    el.innerHTML = '<div class="cal-empty">Noch keine Aufgaben für diesen Tag.<br>Füge deine erste hinzu! 👇</div>';
+    return;
+  }
+
+  el.innerHTML = tasks.map((t, i) => {
+    const tagColors = {'🔬 Forschung':'#2dff6e','✍️ Schreiben':'#4db8ff','📊 Daten':'#c47aff','🗓️ Admin':'#ffd166','🏠 Privat':'#ff8c42'};
+    const tc = tagColors[t.tag] || '#6b8c6b';
+    return `
+    <div class="cal-task-item">
+      <div class="cal-task-check ${t.done?'done':''}" onclick="toggleCalTask(${i})" style="${t.done?`background:${tc};border-color:${tc}`:''}"></div>
+      ${t.time ? `<div style="font-family:'Space Mono',monospace;font-size:11px;color:${tc};min-width:42px;flex-shrink:0;font-weight:700">${t.time}</div>` : '<div style="min-width:42px;flex-shrink:0"></div>'}
+      <div class="cal-task-text ${t.done?'done':''}">${t.name}</div>
+      <div class="cal-task-tag" style="color:${tc};border-color:${tc}33;background:${tc}18">${t.tag.split(' ')[0]}</div>
+      <button class="btn-sm danger" onclick="deleteCalTask(${i})" style="padding:2px 8px;font-size:11px">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function addCalTask() {
+  const input = document.getElementById('calTaskInput');
+  const tag = document.getElementById('calTaskTag');
+  const timeEl = document.getElementById('calTaskTime');
+  const name = input ? input.value.trim() : '';
+  if (!name) return;
+  if (!data.calTasks[calSelected]) data.calTasks[calSelected] = [];
+  data.calTasks[calSelected].push({ name, tag: tag ? tag.value : '🗓️ Admin', time: timeEl ? timeEl.value : '', done: false });
+  data.calTasks[calSelected].sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
+  if (input) input.value = '';
+  save();
+  renderCalendar();
+}
+
+function toggleCalTask(i) {
+  const tasks = data.calTasks[calSelected];
+  if (tasks && tasks[i] !== undefined) { tasks[i].done = !tasks[i].done; save(); renderCalendar(); }
+}
+
+function deleteCalTask(i) {
+  const tasks = data.calTasks[calSelected];
+  if (tasks) { tasks.splice(i, 1); save(); renderCalendar(); }
+}
+
+function calPrev() { calDate.setMonth(calDate.getMonth() - 1); renderCalendar(); }
+function calNext() { calDate.setMonth(calDate.getMonth() + 1); renderCalendar(); }
+
+function statusLabel(s) {
+  const m = { offen:'🔴 Offen', in_arbeit:'🟡 In Arbeit', fertig:'✅ Fertig', aktiv:'🚀 Aktiv',
+    pausiert:'⏸️ Pausiert', idee:'💡 Idee', zu_lesen:'📥 Zu lesen', in_lektuere:'📖 In Lektüre',
+    gelesen:'✅ Gelesen', wichtig:'⭐ Wichtig', entwurf:'✏️ Entwurf', review:'🔄 Review',
+    eingereicht:'📤 Eingereicht', veroeffentlicht:'✅ Veröffentlicht' };
+  return m[s] || s;
+}
+
+function formatDate(d) {
+  if (!d) return '';
+  const [y,m,day] = d.split('-');
+  const months = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+  return `${parseInt(day)}. ${months[parseInt(m)-1]} ${y}`;
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+renderAll();
+renderCalendar();
+</script>
+
+<!-- SETUP MODAL -->
+<div id="setupModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:200;align-items:center;justify-content:center;overflow-y:auto;padding:20px">
+  <div style="background:#111811;border:1px solid #1e2e1e;border-radius:16px;padding:40px;max-width:700px;width:100%;margin:auto">
+    <h2 style="font-family:'Space Mono',monospace;color:#2dff6e;font-size:16px;letter-spacing:2px;margin-bottom:8px">⚙️ EINRICHTUNG – SCHRITT FÜR SCHRITT</h2>
+    <p style="color:#6b8c6b;font-size:13px;margin-bottom:32px">Folge diesen Schritten um dein Dashboard auf allen Geräten zu synchronisieren.</p>
+
+    <div style="display:flex;flex-direction:column;gap:24px">
+
+      <div style="background:#162016;border:1px solid #1e2e1e;border-radius:10px;padding:20px">
+        <div style="font-family:'Space Mono',monospace;font-size:11px;color:#2dff6e;letter-spacing:2px;margin-bottom:12px">SCHRITT 1 · GITHUB ACCOUNT ERSTELLEN</div>
+        <p style="color:#e8f0e8;font-size:13px;line-height:1.7">
+          1. Gehe zu <strong style="color:#4db8ff">github.com</strong> und klicke auf "Sign up"<br>
+          2. Erstelle einen kostenlosen Account<br>
+          3. Verifiziere deine E-Mail-Adresse<br>
+          4. Erstelle ein neues Repository: Klicke auf "+" → "New repository"<br>
+          5. Name: <code style="background:#0a0f0a;padding:2px 6px;border-radius:4px;color:#2dff6e">phd-life-os</code>, stelle es auf <strong>Public</strong>, klicke "Create repository"<br>
+          6. Lade diese HTML-Datei hoch: "uploading an existing file" → Datei rein ziehen → "Commit changes"<br>
+          7. Gehe zu Settings → Pages → Source: "main" → Save<br>
+          8. Deine URL: <code style="background:#0a0f0a;padding:2px 6px;border-radius:4px;color:#2dff6e">deinname.github.io/phd-life-os</code>
+        </p>
+      </div>
+
+      <div style="background:#162016;border:1px solid #1e2e1e;border-radius:10px;padding:20px">
+        <div style="font-family:'Space Mono',monospace;font-size:11px;color:#ffd166;letter-spacing:2px;margin-bottom:12px">SCHRITT 2 · FIREBASE EINRICHTEN</div>
+        <p style="color:#e8f0e8;font-size:13px;line-height:1.7">
+          1. Gehe zu <strong style="color:#4db8ff">firebase.google.com</strong> und melde dich mit deinem Google-Account an<br>
+          2. Klicke auf "Projekt hinzufügen" → Name: <code style="background:#0a0f0a;padding:2px 6px;border-radius:4px;color:#ffd166">phd-life-os</code><br>
+          3. Google Analytics: kann deaktiviert werden → "Projekt erstellen"<br>
+          4. Klicke auf <strong>"Web"</strong> (das &lt;/&gt; Symbol) → App-Name: "PhD Life OS" → "App registrieren"<br>
+          5. Du siehst jetzt einen <code style="background:#0a0f0a;padding:2px 6px;border-radius:4px;color:#ffd166">firebaseConfig</code> Block mit deinen Daten – <strong>kopiere ihn</strong><br>
+          6. Im linken Menü: "Erstellen" → <strong>"Realtime Database"</strong> → "Datenbank erstellen"<br>
+          7. Wähle den Standort <strong>Europe-west1</strong> → "Weiter"<br>
+          8. Wähle <strong>"Im Testmodus starten"</strong> → "Aktivieren"
+        </p>
+      </div>
+
+      <div style="background:#162016;border:1px solid #1e2e1e;border-radius:10px;padding:20px">
+        <div style="font-family:'Space Mono',monospace;font-size:11px;color:#c47aff;letter-spacing:2px;margin-bottom:12px">SCHRITT 3 · CONFIG EINFÜGEN</div>
+        <p style="color:#e8f0e8;font-size:13px;line-height:1.7;margin-bottom:12px">
+          1. Öffne diese HTML-Datei in einem Texteditor (z.B. TextEdit auf Mac, Notepad auf Windows)<br>
+          2. Suche nach: <code style="background:#0a0f0a;padding:2px 6px;border-radius:4px;color:#c47aff">apiKey: "DEIN_API_KEY"</code><br>
+          3. Ersetze den gesamten <code>firebaseConfig</code> Block mit deinen kopierten Daten aus Firebase<br>
+          4. Speichere die Datei<br>
+          5. Lade die aktualisierte Datei erneut auf GitHub hoch (gleicher Prozess wie Schritt 1)
+        </p>
+      </div>
+
+      <div style="background:#162016;border:1px solid #1e2e1e;border-radius:10px;padding:20px">
+        <div style="font-family:'Space Mono',monospace;font-size:11px;color:#ff5c5c;letter-spacing:2px;margin-bottom:12px">SCHRITT 3b · SICHERHEITSREGELN SETZEN 🔒</div>
+        <p style="color:#e8f0e8;font-size:13px;line-height:1.7;margin-bottom:12px">
+          1. In Firebase Console → Realtime Database → Tab <strong>"Regeln"</strong><br>
+          2. Ersetze alles mit diesem Text:<br>
+        </p>
+        <div style="background:#0a0f0a;border-radius:8px;padding:16px;font-family:'Space Mono',monospace;font-size:11px;color:#6b8c6b;line-height:1.8;margin-bottom:12px">
+          {<br>
+          &nbsp;&nbsp;<span style="color:#ffd166">"rules"</span>: {<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#ffd166">"phdOS"</span>: {<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#ffd166">"users"</span>: {<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#c47aff">"$uid"</span>: {<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#2dff6e">".read"</span>: <span style="color:#4db8ff">"$uid === auth.uid"</span>,<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#2dff6e">".write"</span>: <span style="color:#4db8ff">"$uid === auth.uid"</span><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+          &nbsp;&nbsp;}<br>
+          }
+        </div>
+        <p style="color:#e8f0e8;font-size:13px;line-height:1.7">
+          3. Klicke <strong style="color:#2dff6e">"Veröffentlichen"</strong><br>
+          4. Außerdem: Authentication → Sign-in method → <strong>Google aktivieren</strong> ✅<br>
+          → Jetzt kann nur noch du mit deinem Google-Account deine Daten lesen!
+        </p>
+        <div style="background:#0a0f0a;border-radius:8px;padding:16px;font-family:'Space Mono',monospace;font-size:11px;color:#6b8c6b;line-height:1.8">
+          <span style="color:#3d5c3d">// So sieht dein Config aus (Beispiel):</span><br>
+          <span style="color:#c47aff">const</span> firebaseConfig = {<br>
+          &nbsp;&nbsp;apiKey: <span style="color:#2dff6e">"AIzaSy..."</span>,<br>
+          &nbsp;&nbsp;authDomain: <span style="color:#2dff6e">"phd-life-os.firebaseapp.com"</span>,<br>
+          &nbsp;&nbsp;databaseURL: <span style="color:#2dff6e">"https://phd-life-os-default-rtdb..."</span>,<br>
+          &nbsp;&nbsp;projectId: <span style="color:#2dff6e">"phd-life-os"</span>,<br>
+          &nbsp;&nbsp;...<br>
+          };
+        </div>
+      </div>
+
+      <div style="background:#162016;border:1px solid #1e2e1e;border-radius:10px;padding:20px">
+        <div style="font-family:'Space Mono',monospace;font-size:11px;color:#4db8ff;letter-spacing:2px;margin-bottom:12px">SCHRITT 4 · ALS APP INSTALLIEREN</div>
+        <p style="color:#e8f0e8;font-size:13px;line-height:1.7">
+          <strong style="color:#ffd166">📱 iPhone / iPad:</strong><br>
+          1. Öffne deine GitHub Pages URL in Safari<br>
+          2. Tippe auf das Teilen-Symbol (Quadrat mit Pfeil nach oben)<br>
+          3. Scrolle runter → "Zum Home-Bildschirm"<br>
+          4. Name: "PhD Life OS" → "Hinzufügen"<br>
+          5. Die App erscheint auf deinem Homescreen wie eine echte App! ✅<br><br>
+          <strong style="color:#ffd166">💻 Mac / Windows:</strong><br>
+          1. Öffne die URL in Chrome<br>
+          2. Klicke auf das Install-Symbol in der Adressleiste (Computer mit Pfeil)<br>
+          3. "Installieren" → erscheint im Dock / Startmenü
+        </p>
+      </div>
+
+    </div>
+
+    <div style="margin-top:24px;text-align:center">
+      <button onclick="document.getElementById('setupModal').style.display='none'" style="background:#2dff6e;border:none;border-radius:8px;color:#0a0f0a;font-family:'Space Mono',monospace;font-size:13px;font-weight:700;padding:12px 32px;cursor:pointer">
+        ✅ Verstanden – Los geht's!
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Register service worker for PWA offline support
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
